@@ -12,7 +12,6 @@ from ruamel.yaml.compat import StringIO
 
 def get_project_path() -> Path:
     project_path = environ.get('PROJECT_PATH')
-    print()
     if not project_path:
         project_path = Path(__file__).parent.parent
         environ.setdefault(
@@ -35,16 +34,15 @@ class YAML(_YAML):
             return stream.getvalue()
 
 
+_config_ = YAML(typ='safe').load(
+    get_project_path()
+        .joinpath("config.yml")
+        .open(encoding='utf-8')
+)
+
+
 def get_config(config_var_name: str = None) -> dict:
-    return YAML(typ='safe').load(
-        get_project_path()
-            .joinpath("config.yml")
-            .open(encoding='utf-8')
-    )[config_var_name] if config_var_name else YAML(typ='safe').load(
-        get_project_path()
-            .joinpath("config.yml")
-            .open(encoding='utf-8')
-    )
+    return _config_[config_var_name] if config_var_name else _config_
 
 
 def get_var_name(var: Any) -> Union[str, None]:
@@ -53,3 +51,31 @@ def get_var_name(var: Any) -> Union[str, None]:
         if var_val is var:
             return var_name
     return None
+
+
+def format_time(time_: float, c: str = '') -> str:
+    __time = time_
+    h = int(__time // (60 * 60))
+    __time = __time % (60 * 60)
+
+    m = int(__time // 60)
+    __time = __time % 60
+
+    s = int(__time // 1)
+    __time = (__time - s) * 1000
+
+    ms = int(__time // 1)
+    __time = (__time - ms) * 1000
+
+    us = round(__time // 1, 2)
+    us = int(us) if us == int(us) else us
+
+    result = [
+        f"{h}h" if h != 0 else "",
+        f"{m}m" if m != 0 else "",
+        f"{s}s" if s != 0 else "",
+        f"{ms}ms" if ms != 0 else "",
+        f"{us}μs" if us != 0 else ""
+    ]
+
+    return c.join([i for i in result if i != ""])

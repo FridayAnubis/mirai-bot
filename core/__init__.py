@@ -11,7 +11,7 @@ from core.broadcast import Broadcast
 from core.broadcast.interrupt import InterruptControl
 from core.scheduler import KarakoScheduler
 from utils import get_config
-from utils.context import enter_context
+from utils.context import application
 from utils.logger import (
     AbstractLogger,
     Logger,
@@ -46,11 +46,7 @@ class Bot:
             connect_info=self.session,
             logger=self.logger
         )
-        enter_context('application', self.application)
-
-    def initialize(self):
-
-        return
+        application.set(self.application)
 
     def run(self):
         if self.config['banner']:
@@ -62,13 +58,13 @@ class Bot:
                     .read()
             )
 
-        self.initialize()
+        from cube import Cube
+        if isinstance(self.logger, Logger):
+            self.logger.log_to_file()
+        Cube.initialize()
+        del environ, Cube
 
         try:
             self.application.launch_blocking()
         except KeyboardInterrupt:
             self.logger.warn(f'{self.config["name"]} is closed.')
-
-
-if __name__ == '__main__':
-    print(Path(__file__).parent.parent)

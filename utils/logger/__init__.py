@@ -8,6 +8,8 @@ from pathlib import Path
 
 from loguru import logger as _Logger
 
+from .. import get_config
+
 
 class AbstractLogger(ABC):
     @abstractmethod
@@ -46,7 +48,8 @@ class AbstractLogger(ABC):
 class Logger(AbstractLogger):
     __logger: _Logger
 
-    def __init__(self, debug: bool = False) -> None:
+    def __init__(self) -> None:
+        debug: bool = get_config('debug')
         self.__logger = _Logger
         # {thread.name} {file}:{module}.{function} {line}|
         time_fmt = "{time:HH:mm:ss}"  # {time:YYYY-MM-DD HH:mm:ss.SSS}
@@ -63,73 +66,36 @@ class Logger(AbstractLogger):
         try:
             self.__logger.level("DEBUG ", no=10, color="<light-black>",
                                 icon="💡")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("INFO ", no=15, color="<fg #FFFFFF>", icon="  ")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("GROUP", no=15, color="<g>", icon="👪")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("FRIEND", no=15, color="<g>", icon="🙎")  # →←⇨⇦
-        except TypeError:
-            ...
-        try:
             self.__logger.level("TEMP", no=15, color="<g>", icon="👤")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("PLUGIN", no=20, color="<c>", icon="🧩")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("SUCCESS ", no=25, color="<g><b>", icon="✔️")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("WARNING ", no=30, color="<y><b>", icon="⚠️")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("ERROR ", no=35, color="<r><b>", icon="❌")
-        except TypeError:
-            ...
-        try:
             self.__logger.level("CRITICAL ", no=40, color="<fg #FC3F3F><b>",
                                 icon="☠️")
-        except TypeError:
-            ...
-
-        try:
             self.__logger.level("ORDER ", no=15, color="<light-black>",
                                 icon="👉")
         except TypeError:
             ...
 
-    def set_log_file_path(self, path: Union[str, Path, None]):
+    def log_to_file(self, path: Union[str, Path] = None):
         from os import environ
         project_path = Path(environ.get('PROJECT_PATH'))
-        log_path = project_path.joinpath(path)
-        if log_path is None:
-            return
-        fmt = "|{time:HH:mm:ss}|{level.icon}|{message}"
-        if isinstance(log_path, str):
-            log_path = Path(log_path).resolve()
-        if log_path.exists() and log_path.is_dir():
-            self.__logger.add(
-                f"{log_path.__str__()}/file.log",
-                level=10,
-                enqueue=True,
-                format=fmt,
-                rotation="04:00",
-                retention="2 days",
-                encoding="utf8"
-            )
-        else:
-            raise TypeError(f"'{log_path}' not exist")
+        config = get_config('log')
+
+        log_path = project_path.joinpath(
+            config['sink'] if path is None else path
+        ).resolve()
+
+        if not all([log_path.exists(), log_path.is_dir()]):
+            self.warn(f"'{log_path}' does not exist.")
+            log_path.mkdir()
+
+        config.pop('sink')
+        self.__logger.add(sink=f"{log_path.__str__()}/file.log", **config)
 
     def debug(self, msg):
         return self.__logger.log("DEBUG ", msg)

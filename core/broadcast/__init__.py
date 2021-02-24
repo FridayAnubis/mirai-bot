@@ -423,7 +423,7 @@ class Broadcast:
             disabled: bool = False
     ):
         if self.containNamespace(name):
-            raise ExistedNamespace(name, "has been created!")
+            return self.getNamespace(name)
         result = Namespace(name=name, priority=priority, hide=hide,
                            disabled=disabled)
         self.namespaces.append(result)
