@@ -1,0 +1,11 @@
+ujson>=4.0.2
+iterwrapper>=0.1.4,<=1
+loguru>=0.5.3,<=1
+aiohttp>=3.7.3
+yarl>=1.6.3
+ruamel.yaml>=0.16.12
+ruamel.yaml.clib>=0.2.2
+croniter>=1.0.6
+pydantic>=1.7.3
+regex>=2020.11.13
+contextvars>=2.4

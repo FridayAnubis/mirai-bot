@@ -1,0 +1,9 @@
+session:
+  host: http://localhost:9892
+  account: 2928097582
+  authKey: paimon-bot-auth-key
+  websocket: True
+
+name: Paimon
+debug: False
+banner: True
