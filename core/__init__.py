@@ -1,7 +1,5 @@
 from asyncio import get_event_loop
 from asyncio.windows_events import ProactorEventLoop
-from os import environ
-from pathlib import Path
 
 from core.application import (
     KarakoMiraiApplication,
@@ -10,8 +8,11 @@ from core.application import (
 from core.broadcast import Broadcast
 from core.broadcast.interrupt import InterruptControl
 from core.scheduler import KarakoScheduler
-from utils import get_config
-from utils.context import application
+from utils import (
+    get_config,
+    get_project_path,
+)
+from utils.context import bot
 from utils.logger import (
     AbstractLogger,
     Logger,
@@ -34,6 +35,7 @@ class Bot:
         self.logger = logger if logger else Logger()
         self.broadcast = Broadcast(loop=self.loop)
         self.scheduler = KarakoScheduler(self.loop, self.broadcast)
+        self.interrupt = InterruptControl(self.broadcast)
         self.session = Session(
             host=self.config['session']['host'],
             authKey=self.config['session']['authKey'],
@@ -46,13 +48,12 @@ class Bot:
             connect_info=self.session,
             logger=self.logger
         )
-        application.set(self.application)
+        bot.set(self)
 
     def run(self):
         if self.config['banner']:
             print(
-                Path(
-                    environ.get('PROJECT_PATH'))
+                get_project_path()
                     .joinpath('resource/banner.txt')
                     .open(encoding='utf-8')
                     .read()
@@ -62,7 +63,7 @@ class Bot:
         if isinstance(self.logger, Logger):
             self.logger.log_to_file()
         Cube.initialize()
-        del environ, Cube
+        del Cube
 
         try:
             self.application.launch_blocking()

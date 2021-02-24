@@ -83,6 +83,7 @@ from .utilles import (
     yes_or_no,
 )
 from .event.mirai import *
+from ..template import Template
 
 
 def error_wrapper(network_action_callable: Callable):
@@ -594,7 +595,7 @@ class KarakoMiraiApplication:
     async def sendFriendMessage(
             self,
             target: Union[Friend, int],
-            message: MessageChain,
+            message: Union[MessageChain, Template],
             *,
             quote: Optional[Union[Source, int]] = None,
     ) -> BotMessage:
@@ -609,7 +610,10 @@ class KarakoMiraiApplication:
             BotMessage: 即当前会话账号所发出消息的元数据, 内包含有一 `messageId` 属性, 可用于回复.
         """
         with enter_message_send_context(UploadMethods.Friend):
-            message_result = await message.build()
+            _message = message
+            if isinstance(_message, Template):
+                _message = _message.render()
+            message_result = await _message.build()
             async with self.session.post(
                     self.url_gen("sendFriendMessage"),
                     json={

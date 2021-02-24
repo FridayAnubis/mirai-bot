@@ -7,7 +7,10 @@ from core.application.message.elements import (
     InternalElement,
 )
 from core.application.message.elements.internal import Plain
-from regex import split as re_split, match as re_match
+from regex import (
+    split as re_split,
+    match as re_match,
+)
 from pydantic import validate_arguments
 from core.application import MessageChain
 
@@ -28,8 +31,8 @@ class Template:
 
     def split_template(self) -> List[str]:
         return re_split(
-                r"(?|(\$[a-zA-Z_][a-zA-Z0-9_]*)|(\$[0-9]*))",
-                self.template
+            r"(?|(\$[a-zA-Z_][a-zA-Z0-9_]*)|(\$[0-9]*))",
+            self.template
         )
 
     @validate_arguments
@@ -49,6 +52,6 @@ class Template:
                         patterns.append(list_get(args, int(pattern[1:])))
         return MessageChain.create(patterns)
 
-
-def template(string: str, *args: ElementType, **kwargs: ElementType):
-    return Template(template_=string).render(*args, **kwargs)
+#
+# def template(string: str, *args: ElementType, **kwargs: ElementType):
+#     return Template(template_=string).render(*args, **kwargs)

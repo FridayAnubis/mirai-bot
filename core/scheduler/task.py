@@ -126,8 +126,9 @@ class SchedulerTask:
 
     @print_track_async
     async def run(self) -> None:
-        logger: Logger = get_var('application').logger
-        debug: bool = get_var('debug')
+        bot = get_var('bot')
+        logger: Logger = bot.app.logger
+        debug: bool = bot.config['debug']
         for coroutine, waiting, sleep_interval in self.coroutine_generator():
             if waiting:  # 是否为 asyncio.sleep 的 coroutine
                 with self.sleep_record:

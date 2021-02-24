@@ -1,3 +1,5 @@
+from core.template import Template
+
 _name = 'BaseCube'
 _author = 'Karako'
 _description = """
@@ -22,24 +24,31 @@ from . import feature
 from utils.context import get_var
 from utils import get_config
 
-application: KarakoMiraiApplication = get_var('application')
+bot = get_var('bot')
+app: KarakoMiraiApplication = bot.app
 
 
 @feature(
     'FriendMessage',
     dispatchers=[Kanata([FullMatch("!root"), RequireParam('param')])]
 )
-def friend_base(message: MessageChain, friend: Friend, param: MessageChain):
+async def friend_base(message: MessageChain, friend: Friend,
+                      param: MessageChain):
     if friend.id == get_config('master'):
         cmd = param.asDisplay.strip() if param is not None else None
 
         if cmd == 'on':
-            Cube.install_all_cube()
+            result = Cube.install_all_cube()
 
         if cmd == 're':
-            Cube.reinstall_all_cube()
+            try:
+                Cube.reinstall_all_cube()
+            except Exception as e:
+                app.logger.exception(f'Cubes reinstall error:{e}')
 
         if cmd == 'off':
-            Cube.uninstall_all_cube()
-
-
+            try:
+                Cube.uninstall_all_cube()
+            except Exception as e:
+                app.logger.exception(f'Cubes uninstall error:{e}')
+                await app.sendFriendMessage(friend, Template(f"{e}"))

@@ -1,21 +1,18 @@
 from asyncio import AbstractEventLoop
-from datetime import datetime
 from typing import (
-    Iterable,
     List,
     Optional,
 )
 
+from core.broadcast import BaseDispatcher
 from core.broadcast import Broadcast
 from core.broadcast import Decorator
-from core.broadcast import BaseDispatcher
-from .task import SchedulerTask
+from utils.typing import Timer
 from .exception import (
     RegisteredSchedule,
     InvalidSchedule,
 )
-
-Timer = Iterable[datetime]
+from .task import SchedulerTask
 
 
 class KarakoScheduler:

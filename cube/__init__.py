@@ -16,7 +16,10 @@ from typing import (
     List,
 )
 
-from core import KarakoMiraiApplication
+from core import (
+    KarakoMiraiApplication,
+    KarakoScheduler,
+)
 from core.broadcast import (
     BaseEvent,
     Namespace,
@@ -29,8 +32,11 @@ from core.broadcast import (
 from core.broadcast.utilles import cached_isinstance
 from utils import format_time
 from utils.context import get_var
+from utils.typing import Timer
 
-application: "KarakoMiraiApplication" = get_var('application')
+bot = get_var('bot')
+application: "KarakoMiraiApplication" = bot.app
+scheduler: "KarakoScheduler" = bot.scheduler
 broadcast = application.broadcast
 
 
@@ -38,9 +44,9 @@ def feature(
         event: Union[str, Type[BaseEvent]],
         *,
         priority: int = 16,
-        dispatchers: List[BaseDispatcher] = None,
         namespace: Namespace = None,
         decorators: List[Decorator] = None,
+        dispatchers: List[BaseDispatcher] = None,
         enable_internal_access: bool = False,
 ):
     dispatchers = [] if dispatchers is None else dispatchers
@@ -80,6 +86,22 @@ def feature(
         return callable_target
 
     return feature_wrapper
+
+
+def schedule(
+        timer: Timer,
+        *,
+        cancelable: bool = True,
+        decorators: List[Decorator] = None,
+        dispatchers: List[BaseDispatcher] = None,
+        enableInternalAccess: Optional[bool] = False
+):
+    def schedule_wrapper(func):
+
+
+        return func
+
+    return schedule_wrapper
 
 
 class Cube:
