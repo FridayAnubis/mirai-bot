@@ -1,4 +1,4 @@
-karako-mirai-bot
+mirai-bot
 -------------
 	
 <a href="https://www.python.org" alt="python"><img src="https://img.shields.io/badge/python-3.8+-blue" /></a>
