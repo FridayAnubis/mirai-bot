@@ -30,12 +30,13 @@ from core.broadcast import (
     RegisteredEventListener,
 )
 from core.broadcast.utilles import cached_isinstance
+from core.scheduler import SchedulerTask
 from utils import format_time
 from utils.context import get_var
 from utils.typing import Timer
 
 bot = get_var('bot')
-application: "KarakoMiraiApplication" = bot.app
+application: "KarakoMiraiApplication" = bot.application
 scheduler: "KarakoScheduler" = bot.scheduler
 broadcast = application.broadcast
 
@@ -97,8 +98,12 @@ def schedule(
         enableInternalAccess: Optional[bool] = False
 ):
     def schedule_wrapper(func):
-
-
+        task = SchedulerTask(
+            func, timer, broadcast, broadcast.loop, cancelable,
+            decorators, dispatchers, enableInternalAccess,
+            scheduler.createNamespace(func.__module__.split('.')[-1])
+        )
+        scheduler.addSchedule(task)
         return func
 
     return schedule_wrapper
@@ -112,6 +117,7 @@ class Cube:
 
     _status: bool = False
 
+    _disable: bool
     _name: str
     _author: str
     _description: Optional[str]
@@ -130,6 +136,13 @@ class Cube:
                     f"'{self._module_path}': {e}"
                 )
                 raise e
+
+        try:
+            self._disable = self._module.__getattribute__('_disable')
+        except AttributeError:
+            raise AttributeError(
+                f'Cube "{self._module_path}" has no "_disable" attribute.'
+            )
 
         try:
             self._name = self._module.__getattribute__('_name')
@@ -159,6 +172,9 @@ class Cube:
             self._module.__name__.split('.')[-1]
         )
         reload_module(self._module)
+        if self._status:
+            self._status = False
+            self.turn_on()
 
     def uninstall(self):
         sys.modules.pop(self._module.__name__)
@@ -167,12 +183,14 @@ class Cube:
             self._module.__name__.split('.')[-1]
         )
         Cube.__cube_list__.remove(self)
+        self._status = False
 
     def turn_on(self):
         if not self._status:
             application.broadcast.unHideNamespace(
                 self._module.__name__.split('.')[-1]
             )
+            scheduler.enableNamespace(self._module.__name__.split('.')[-1])
             self._status = True
 
     def turn_off(self):
@@ -180,6 +198,32 @@ class Cube:
             application.broadcast.hideNamespace(
                 self._module.__name__.split('.')[-1]
             )
+            scheduler.disableNamespace(self._module.__name__.split('.')[-1])
+            self._status = False
+
+    def switch(self) -> bool:
+        if self._status:
+            self.turn_off()
+        else:
+            self.turn_on()
+        self._status = not self._status
+        return self._status
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def author(self):
+        return self._author
+
+    @property
+    def description(self):
+        return self._description
+
+    @property
+    def is_disable(self):
+        return self._disable
 
     @classmethod
     def initialize(cls):
@@ -194,8 +238,8 @@ class Cube:
             )
             raise e
         cube = cls(module)
-        cls.__cube_list__.append(cube)
         cube.install()
+        cube.turn_on()
 
     @classmethod
     def install_all_cube(cls):
@@ -207,7 +251,11 @@ class Cube:
         home = Path(__file__).parent
         for cube_path in home.iterdir():
             if any([
-                not cube_path.name.startswith('_'),
+                all([
+                    cube_path.is_file(),
+                    not cube_path.name.startswith('_'),
+                    cube_path.suffix == '.py'
+                ]),
                 all([
                     cube_path.is_dir(),
                     cube_path.joinpath('__init__.py').exists()
@@ -226,25 +274,57 @@ class Cube:
                     continue
                 cube = cls(module)
                 cls.__cube_list__.append(cube)
+                if not cube.__getattribute__('_disable'):
+                    cube.turn_on()
                 success += 1
-        used_time = time() - start_time
+        used_time = format_time(time() - start_time, ' ')
         if count is success:
             application.logger.success(
                 'All cubes are installed successfully, took {}'
-                    .format(format_time(used_time, ' '))
+                    .format(used_time)
             )
         else:
             application.logger.warn(
                 "Success {} cubes, fail {} plugins.".format(success, fail)
             )
-        return success, fail, count, start_time
+        return success, fail, count, used_time
 
     @classmethod
     def reinstall_all_cube(cls):
+        success = 0
+        fail = 0
+        count = 0
+        start_time = time()
         for cube in cls.__cube_list__:
-            cube.reinstall()
+            count += 1
+            try:
+                cube.reinstall()
+                success += 1
+            except Exception as e:
+                application.logger.error(
+                    f"An error occurred while loading the "
+                    f"cube({cube._module_path}): {e}"
+                )
+                fail += 1
+        used_time = format_time(time() - start_time, ' ')
+        return success, fail, count, used_time
 
     @classmethod
     def uninstall_all_cube(cls):
+        success = 0
+        fail = 0
+        count = 0
+        start_time = time()
         for cube in cls.__cube_list__:
-            cube.uninstall()
+            count += 1
+            try:
+                cube.uninstall()
+                success += 1
+            except Exception as e:
+                application.logger.error(
+                    f"An error occurred while loading the "
+                    f"cube({cube._module_path}): {e}"
+                )
+                fail += 1
+        used_time = format_time(time() - start_time, ' ')
+        return success, fail, count, used_time

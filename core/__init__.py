@@ -12,7 +12,7 @@ from utils import (
     get_config,
     get_project_path,
 )
-from utils.context import bot
+from utils.context import set_var
 from utils.logger import (
     AbstractLogger,
     Logger,
@@ -29,10 +29,14 @@ class Bot:
     logger: AbstractLogger
 
     def __init__(self, *, logger: AbstractLogger = None):
+
         self.config = get_config()
+        set_var('debug', self.config['debug'])
 
         self.loop = get_event_loop()
         self.logger = logger if logger else Logger()
+        set_var('logger', self.logger)
+
         self.broadcast = Broadcast(loop=self.loop)
         self.scheduler = KarakoScheduler(self.loop, self.broadcast)
         self.interrupt = InterruptControl(self.broadcast)
@@ -48,7 +52,7 @@ class Bot:
             connect_info=self.session,
             logger=self.logger
         )
-        bot.set(self)
+        set_var('bot', self)
 
     def run(self):
         if self.config['banner']:

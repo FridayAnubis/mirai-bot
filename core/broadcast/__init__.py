@@ -18,7 +18,7 @@ from typing import (
 
 from iterwrapper import IterWrapper
 
-from utils.logger import Logger
+from utils.context import get_var
 from .entities.decorator import Decorator
 from .entities.dispatcher import BaseDispatcher
 from .entities.event import BaseEvent
@@ -59,9 +59,6 @@ from .utilles import (
 )
 from .zone import Zone
 
-logger = Logger()
-debug: bool = False
-
 
 class Broadcast:
     loop: asyncio.AbstractEventLoop
@@ -84,14 +81,15 @@ class Broadcast:
             self,
             *,
             loop: asyncio.AbstractEventLoop = None,
-            debug_flag: bool = debug,
+            debug_flag: bool = None,
             inject_rules: Optional[List[BaseRule]] = None,
             use_dispatcher_statistics: bool = False,
             use_reference_optimization: bool = False
     ):
+        debug: bool = get_var('debug')
         self.loop = loop or asyncio.get_event_loop()
         self.default_namespace = Namespace(name="default", default=True)
-        self.debug_flag = debug_flag
+        self.debug_flag = debug if debug_flag is None else debug_flag
         self.namespaces = []
         self.listeners = []
         self.dispatcher_inject_rules = inject_rules or []
@@ -142,11 +140,12 @@ class Broadcast:
             ]
             try:
                 await asyncio.gather(*coroutine)
+            except PropagationCancelled:
+                break
+            except ExecutionStop:
+                break
             except Exception as e:
-                if cached_isinstance(e, PropagationCancelled):
-                    break
-                else:
-                    logger.debug(f"got an error '{type(e)}': {e}")
+                get_var('logger').debug(f"got an error '{type(e)}': {e}")
 
     async def Executor(
             self,
@@ -422,8 +421,9 @@ class Broadcast:
             self, name, *, priority: int = 0, hide: bool = False,
             disabled: bool = False
     ):
-        if self.containNamespace(name):
-            return self.getNamespace(name)
+        result = self.getNamespace(name)
+        if result is not None:
+            return result
         result = Namespace(name=name, priority=priority, hide=hide,
                            disabled=disabled)
         self.namespaces.append(result)

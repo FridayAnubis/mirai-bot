@@ -3,8 +3,10 @@ from contextvars import ContextVar
 from inspect import currentframe
 from typing import Any
 
-application = ContextVar('application')
 bot = ContextVar('bot')
+application = ContextVar('application')
+logger = ContextVar('logger')
+debug = ContextVar('debug')
 
 
 @contextmanager
@@ -32,4 +34,11 @@ def get_var(var_name: str):
     try:
         return eval(f'{var_name}.get()')
     except (NameError, AttributeError, LookupError):
-        raise ValueError(f"context('{var_name}') not exits!")
+        raise ValueError(f"Context('{var_name}') not exits!")
+
+
+def set_var(var_name: str, value: Any):
+    try:
+        return eval(var_name).set(value)
+    except (NameError, AttributeError):
+        raise ValueError(f"Context('{var_name}') not exits!")

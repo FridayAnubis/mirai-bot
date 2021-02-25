@@ -54,6 +54,8 @@ def get_var_name(var: Any) -> Union[str, None]:
 
 
 def format_time(time_: float, c: str = '') -> str:
+    if time_ == 0:
+        return '0μs'
     __time = time_
     h = int(__time // (60 * 60))
     __time = __time % (60 * 60)

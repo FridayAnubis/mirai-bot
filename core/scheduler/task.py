@@ -19,7 +19,10 @@ from typing import (
     Union,
 )
 
-from core.broadcast import BaseDispatcher
+from core.broadcast import (
+    BaseDispatcher,
+    Namespace,
+)
 from core.broadcast import Broadcast
 from core.broadcast import Decorator
 from core.broadcast import ExecTarget
@@ -56,6 +59,8 @@ class SchedulerTask:
 
     loop: AbstractEventLoop
 
+    namespace: Namespace
+
     @property
     def is_sleeping(self) -> bool:
         return self.sleep_record.entered
@@ -64,20 +69,23 @@ class SchedulerTask:
     def is_executing(self) -> bool:
         return not self.sleep_record.entered
 
-    def __init__(self,
-                 target: Callable[..., Any],
-                 timer: "Timer",
-                 broadcast: Broadcast,
-                 loop: AbstractEventLoop,
-                 cancelable: bool = False,
-                 dispatchers: Optional[
-                     List[
-                         Union[
-                             Type[BaseDispatcher],
-                             Callable,
-                             BaseDispatcher]]] = None,
-                 decorators: Optional[List[Decorator]] = None,
-                 enableInternalAccess: bool = False) -> None:
+    def __init__(
+            self,
+            target: Callable[..., Any],
+            timer: "Timer",
+            broadcast: Broadcast,
+            loop: AbstractEventLoop,
+            cancelable: bool = False,
+            dispatchers: Optional[
+                List[
+                    Union[
+                        Type[BaseDispatcher],
+                        Callable,
+                        BaseDispatcher]]] = None,
+            decorators: Optional[List[Decorator]] = None,
+            enableInternalAccess: bool = False,
+            namespace: Namespace = Namespace(name="default", default=True)
+    ) -> None:
         self.target = target
         self.timer = timer
         self.broadcast = broadcast
@@ -88,6 +96,7 @@ class SchedulerTask:
         self.enableInternalAccess = enableInternalAccess
         self.sleep_record = EnteredRecord()
         self.started_record = EnteredRecord()
+        self.namespace = namespace
 
     def setup_task(self) -> None:
         if not self.started_record.entered:  # 还未启动
