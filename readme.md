@@ -6,4 +6,4 @@ karako-mirai-bot
 ### 简介	
 基于 [mirai](https://github.com/mamoe/mirai) 内核和 [Graia](https://github.com/GraiaProject/Application)
 
-该项目只提供一个可供学习参考的模板
+# 正在开发中
