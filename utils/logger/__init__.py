@@ -116,7 +116,7 @@ class Logger(AbstractLogger):
         return self.__logger.log("ERROR ", msg)
 
     def exception(self, msg):
-        return self.__logger.error(msg)
+        return self.__logger.exception(msg)
 
     def critical(self, msg):
         return self.__logger.log("CRITICAL ", msg)

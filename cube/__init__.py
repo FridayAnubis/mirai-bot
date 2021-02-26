@@ -46,8 +46,8 @@ def feature(
         *,
         priority: int = 16,
         namespace: Namespace = None,
-        decorators: List[Decorator] = None,
-        dispatchers: List[BaseDispatcher] = None,
+        decorators: Union[List[Decorator], Decorator] = None,
+        dispatchers: Union[List[BaseDispatcher], BaseDispatcher] = None,
         enable_internal_access: bool = False,
 ):
     dispatchers = [] if dispatchers is None else dispatchers
@@ -58,6 +58,10 @@ def feature(
         if not event:
             raise InvalidEventName(name, 'is not valid!')
     priority = (type(priority) == int) and priority or int(priority)
+    decorators = list(decorators) if not isinstance(decorators, list) \
+        else decorators
+    dispatchers = [dispatchers] if not isinstance(dispatchers, list) \
+        else dispatchers
 
     def feature_wrapper(callable_target: FunctionType):
         result = broadcast.getListener(callable_target)
@@ -171,12 +175,14 @@ class Cube:
         application.broadcast.removeNamespace(
             self._module.__name__.split('.')[-1]
         )
-        reload_module(self._module)
+        self._module = import_module(self._module_path)
         if self._status:
             self._status = False
             self.turn_on()
 
     def uninstall(self):
+        for var in [_ for _ in dir(self._module) if not _.startswith('__')]:
+            eval(f'del {self._module.__name__}.{var}')
         sys.modules.pop(self._module.__name__)
         self._module = None
         application.broadcast.removeNamespace(
@@ -328,3 +334,10 @@ class Cube:
                 fail += 1
         used_time = format_time(time() - start_time, ' ')
         return success, fail, count, used_time
+
+    @classmethod
+    def get_by_name(cls, cube_name: str) -> "Cube":
+        for cube in cls.__cube_list__:
+            if cube.name == cube_name:
+                return cube
+        return None
