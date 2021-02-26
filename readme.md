@@ -13,3 +13,5 @@ Mirai Bot
 1. 安装并配置 [MAH](https://github.com/project-mirai/mirai-api-http)
 2. 编辑配置文件`config.yml`
 3. 开始在`cube`文件夹中开发cube
+
+为什么`readme`才这么点？因为作者很忙(~~懒~~)，所以有兴趣的同学自己阅读一下源码
