@@ -7,23 +7,21 @@ This is base cube,you can add some base functions hear.
 2.This cube cannot be reinstalled and uninstalled.
 """
 
-from core.template import Template
+from core.application import (
+    MessageChain,
+    Friend,
+    KarakoMiraiApplication,
+)
 from core.application.message.parser.kanata import Kanata
 from core.application.message.parser.signature import (
     FullMatch,
     RequireParam,
 )
-
-from core.application import (
-    MessageChain,
-    Friend,
-    KarakoMiraiApplication,
-    Image,
-)
+from core.template import Template
 from cube import Cube
-from . import feature
-from utils.context import get_var
 from utils import get_config
+from utils.context import get_var
+from . import feature
 
 bot = get_var('bot')
 app: KarakoMiraiApplication = bot.application

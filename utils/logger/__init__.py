@@ -95,7 +95,11 @@ class Logger(AbstractLogger):
             log_path.mkdir()
 
         config.pop('sink')
-        self.__logger.add(sink=f"{log_path.__str__()}/file.log", **config)
+        self.__logger.add(
+            sink=f"{log_path.__str__()}/file.log",
+            level=10,
+            **config
+        )
 
     def debug(self, msg):
         return self.__logger.log("DEBUG ", msg)

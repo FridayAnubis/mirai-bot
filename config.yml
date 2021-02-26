@@ -1,19 +1,18 @@
-session:
+session:  # mirai-api-http 配置
   host: http://localhost:9892
   account: 2928097582
   authKey: paimon-bot-auth-key
   websocket: True
 
-name: Paimon
-debug: False
-banner: True
-master: 1490457324
+name: Paimon        # bot名称
+debug: False        # 是否开启debug
+banner: True        # 控制太是否打印banner
+master: 1490457324  # bot主人QQ号
 
-log:
-  sink: ./log
-  level: 10
-  enqueue: True
-  format: "|{time:HH:mm:ss}|{level.icon}|{message}"
-  rotation: "5 MB"
+log:  # 日志配置
+  sink: ./log     # 日志文件存放目录
+  enqueue: True   # 是否开启进程保护
+  format: "|{time:HH:mm:ss}|{level.icon}|{message}" # 日志格式
+  rotation: "5 MB"      # 详情见loguru文档
   retention: "1 days"
   encoding: "utf8"
