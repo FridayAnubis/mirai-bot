@@ -6,7 +6,7 @@ Mirai Bot
 ### 简介
 
 基于 [mirai-api-http](https://github.com/project-mirai/mirai-api-http)
-和 [GraiaProject](https://github.com/GraiaProject/Application) 的模块化pythonQQ机器人
+和 [GraiaProject](https://github.com/GraiaProject/Application) 的支持热重载的模块化pythonQQ机器人
 
 ## 怎么试用？
 
