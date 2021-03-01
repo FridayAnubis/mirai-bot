@@ -5,7 +5,7 @@ session:  # mirai-api-http 配置
   websocket: True
 
 name: Paimon        # bot名称
-debug: False        # 是否开启debug
+debug: True         # 是否开启debug
 banner: True        # 控制太是否打印banner
 master: 1490457324  # bot主人QQ号
 

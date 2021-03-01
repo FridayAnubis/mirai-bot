@@ -61,7 +61,7 @@ class Logger(AbstractLogger):
             stderr,
             format=fmt,
             enqueue=False,
-            level=10 if debug else 0
+            level=10 if debug else 15
         )
         try:
             self.__logger.level("DEBUG ", no=10, color="<light-black>",
