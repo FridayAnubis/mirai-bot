@@ -1,19 +1,11 @@
 import sys
-from importlib import (
-    reload as reload_module,
-    import_module,
-)
+from asyncio import sleep as Sleep
+from importlib import import_module
 from pathlib import Path
 from time import time
 from types import (
     ModuleType,
     FunctionType,
-)
-from typing import (
-    Optional,
-    Union,
-    Type,
-    List,
 )
 
 from core import (
@@ -28,17 +20,27 @@ from core.broadcast import (
     InvalidEventName,
     Listener,
     RegisteredEventListener,
+    ExecTarget,
+    DispatcherInterface,
 )
 from core.broadcast.utilles import cached_isinstance
 from core.scheduler import SchedulerTask
 from utils import format_time
 from utils.context import get_var
-from utils.typing import Timer
+from utils.typing import (
+    Timer,
+    PathType,
+    Optional,
+    Union,
+    Type,
+    List,
+)
 
 bot = get_var('bot')
 application: "KarakoMiraiApplication" = bot.application
 scheduler: "KarakoScheduler" = bot.scheduler
 broadcast = application.broadcast
+loop = broadcast.loop
 
 
 def feature(
@@ -181,13 +183,12 @@ class Cube:
             self.turn_on()
 
     def uninstall(self):
-        for var in [_ for _ in dir(self._module) if not _.startswith('__')]:
-            eval(f'del {self._module.__name__}.{var}')
-        sys.modules.pop(self._module.__name__)
-        self._module = None
         application.broadcast.removeNamespace(
             self._module.__name__.split('.')[-1]
         )
+        sys.modules.pop(self._module.__name__)
+        self._module.__dict__.clear()
+        self._module = None
         Cube.__cube_list__.remove(self)
         self._status = False
 
@@ -232,108 +233,107 @@ class Cube:
         return self._disable
 
     @classmethod
-    def initialize(cls):
-        home = Path(__file__).parent
-        path = home.joinpath('__base__.py')
-        module_path = f'{home.name}.{path.stem}'
-        try:
-            module = import_module(module_path)
-        except Exception as e:
-            application.logger.exception(
-                f"An error occurred while loading the base cube: {e}"
-            )
-            raise e
-        cube = cls(module)
-        cube.install()
-        cube.turn_on()
-
-    @classmethod
-    def install_all_cube(cls):
-        success = 0
-        fail = 0
-        count = 0
-        start_time = time()
-
+    def cube_paths(cls) -> List[PathType]:
+        result = []
         home = Path(__file__).parent
         for cube_path in home.iterdir():
             if any([
                 all([
                     cube_path.is_file(),
                     not cube_path.name.startswith('_'),
-                    cube_path.suffix == '.py'
+                    cube_path.suffix == '.py',
+                    cube_path.stem != '__base__'
                 ]),
                 all([
                     cube_path.is_dir(),
                     cube_path.joinpath('__init__.py').exists()
                 ])
             ]):
-                count += 1
-                module_path = f'{home.name}.{cube_path.stem}'
-                try:
-                    module = import_module(module_path)
-                except Exception as e:
-                    application.logger.exception(
-                        f"An error occurred while loading the "
-                        f"cube({module_path}): {e}"
+                result.append(f'{home.name}.{cube_path.stem}')
+        return result
+
+    @classmethod
+    def load_form_path(cls, cube_path) -> "Cube":
+        try:
+            module = import_module(cube_path)
+        except Exception as e:
+            application.logger.exception(
+                f"An error occurred while loading the "
+                f"cube({cube_path}): {e}"
+            )
+            raise e
+        return cls(module)
+
+    @classmethod
+    async def scan_load(cls):
+
+        class CubeLoadTaskExecute(BaseEvent):
+            class Dispatcher(BaseDispatcher):
+                def catch(self: DispatcherInterface):
+                    ...
+
+        def cube_module_path_list():
+            return [_._module_path for _ in cls.__cube_list__]
+
+        def scan():
+            for cube_path in cls.cube_paths():
+                if cube_path not in cube_module_path_list():
+                    application.logger.info(
+                        f'Detect a cube from "{cube_path}"'
                     )
-                    fail += 1
-                    continue
-                cube = cls(module)
-                cls.__cube_list__.append(cube)
-                if not cube.__getattribute__('_disable'):
-                    cube.turn_on()
-                success += 1
-        used_time = format_time(time() - start_time, ' ')
-        if count is success:
-            application.logger.success(
-                'All cubes are installed successfully, took {}'
-                    .format(used_time)
-            )
-        else:
-            application.logger.warn(
-                "Success {} cubes, fail {} plugins.".format(success, fail)
-            )
-        return success, fail, count, used_time
+                    try:
+                        cube = cls.load_form_path(cube_path)
+                        application.logger.success(
+                            f"The cube named '{cube._name}' has been loaded."
+                        )
+                    except Exception as e:
+                        application.logger.debug(f'cube load error:{e}')
+                        continue
+                    cls.__cube_list__.append(cube)
+                    if not cube.__getattribute__('_disable'):
+                        cube.turn_on()
+            for cube_path in cube_module_path_list():
+                if cube_path not in cls.cube_paths():
+                    application.logger.warn(
+                        f"The cube from '{cube_path}' has been deleted."
+                    )
+                    try:
+                        cube = cls.get_by_module_path(cube_path)
+                        cube.turn_off()
+                        cube.uninstall()
+                        application.logger.success(
+                            f"The cube named '{cube._name}' has been "
+                            f"uninstalled."
+                        )
+                    except Exception as e:
+                        application.logger.exception(e)
+                        continue
+
+        def coroutine_generator():
+            while True:
+                yield Sleep(0.1), True
+                yield (broadcast.Executor(
+                    target=ExecTarget(
+                        callable_=scan,
+                        inline_dispatchers=[],
+                        headless_decorators=[],
+                        enable_internal_access=False
+                    ),
+                    event=CubeLoadTaskExecute()
+                ), False)
+
+        for coroutine, waiting in coroutine_generator():
+            await coroutine
 
     @classmethod
-    def reinstall_all_cube(cls):
-        success = 0
-        fail = 0
-        count = 0
-        start_time = time()
-        for cube in cls.__cube_list__:
-            count += 1
-            try:
-                cube.reinstall()
-                success += 1
-            except Exception as e:
-                application.logger.error(
-                    f"An error occurred while loading the "
-                    f"cube({cube._module_path}): {e}"
-                )
-                fail += 1
-        used_time = format_time(time() - start_time, ' ')
-        return success, fail, count, used_time
-
-    @classmethod
-    def uninstall_all_cube(cls):
-        success = 0
-        fail = 0
-        count = 0
-        start_time = time()
-        for cube in cls.__cube_list__:
-            count += 1
-            try:
-                cube.uninstall()
-                success += 1
-            except Exception as e:
-                application.logger.error(
-                    f"An error occurred while loading the "
-                    f"cube({cube._module_path}): {e}"
-                )
-                fail += 1
-        used_time = format_time(time() - start_time, ' ')
-        return success, fail, count, used_time
+    def initialize(cls):
+        home = Path(__file__).parent
+        path = home.joinpath('__base__.py')
+        module_path = f'{home.name}.{path.stem}'
+        cube = cls.load_form_path(module_path)
+        cube.install()
+        cube.turn_on()
+        loop.create_task(cls.scan_load())
 
     @classmethod
     def get_by_name(cls, cube_name: str) -> "Cube":
@@ -341,3 +341,9 @@ class Cube:
             if cube.name == cube_name:
                 return cube
         return None
+
+    @classmethod
+    def get_by_module_path(cls, module_path: str) -> "Cube":
+        for cube in cls.__cube_list__:
+            if cube._module_path == module_path:
+                return cube

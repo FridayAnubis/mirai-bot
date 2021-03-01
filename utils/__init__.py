@@ -81,3 +81,23 @@ def format_time(time_: float, c: str = '') -> str:
     ]
 
     return c.join([i for i in result if i != ""])
+
+
+def serial_number(num: int, serial_type: int = 0) -> str:
+    if num is None:
+        return num
+    result_list = [
+        "①②③④⑤⑥⑦⑧⑨⑩",
+        "㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩",
+        "⒈⒉⒊⒋⒌⒍⒎⒏⒐⒑⒒⒓⒔⒕⒖⒗⒘⒙⒚⒛",
+        "⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇",
+        "ⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹ",
+        "ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ"
+    ]
+    result_list_len = [len(i) for i in result_list]
+    result_list_max_len = max(result_list_len)
+    if num - 1 > result_list_max_len:
+        return None
+    elif result_list_len[serial_type] < num:
+        serial_type = randint(2, 3)
+    return result_list[serial_type][num - 1]

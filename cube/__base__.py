@@ -16,10 +16,14 @@ from core.application.message.parser.kanata import Kanata
 from core.application.message.parser.signature import (
     FullMatch,
     RequireParam,
+    OptionalParam,
 )
 from core.template import Template
 from cube import Cube
-from utils import get_config
+from utils import (
+    get_config,
+    serial_number,
+)
 from utils.context import get_var
 from . import feature
 
@@ -29,45 +33,20 @@ app: KarakoMiraiApplication = bot.application
 
 @feature(
     'FriendMessage',
-    dispatchers=Kanata([FullMatch("!root"), RequireParam('param')])
+    dispatchers=Kanata([FullMatch("!cube"), OptionalParam('param')])
 )
-async def friend_base(friend: Friend, param: MessageChain):
+async def friend_cube(friend: Friend, param: MessageChain):
     if friend.id == get_config('master'):
         cmd = param.asDisplay.strip() if param is not None else None
-
-        if cmd == 'on':
-            result = Cube.install_all_cube()
-            await app.sendFriendMessage(
-                friend,
-                Template(
-                    f'总共有{result[2]}个Cube\n成功安装了{result[0]}个、失败了'
-                    f'{result[1]}个\n总耗时{result[3]}'
+        content = ''
+        if cmd is None or cmd == '':
+            for cube in Cube.__cube_list__:
+                content += "{} {}-{}".format(
+                    serial_number(Cube.__cube_list__.index(cube) + 1),
+                    cube.name,
+                    cube.author
                 )
-            )
-
-        if cmd == 're':
-            result = Cube.reinstall_all_cube()
-            await app.sendFriendMessage(
-                friend,
-                Template(
-                    f'总共有{result[2]}个Cube\n成功重装了{result[0]}个、失败了'
-                    f'{result[1]}个\n总耗时{result[3]}'
-                )
-            )
-
-        if cmd == 'off':
-            try:
-                result = Cube.uninstall_all_cube()
-                await app.sendFriendMessage(
-                    friend,
-                    Template(
-                        f'总共有{result[2]}个Cube\n成功卸载了{result[0]}个、失败了'
-                        f'{result[1]}个\n总耗时{result[3]}'
-                    )
-                )
-            except Exception as e:
-                app.logger.exception(f'Cubes uninstall error:{e}')
-                await app.sendFriendMessage(friend, Template(f"{e}"))
+            await app.sendFriendMessage(friend, Template(content))
 
 
 @feature(
