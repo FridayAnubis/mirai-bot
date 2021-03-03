@@ -171,11 +171,11 @@ class Cube:
         self._module = module
 
     def reinstall(self):
-        for var in [_ for _ in dir(self._module) if not _.startswith('__')]:
-            eval(f'del {self._module.__name__}.{var}')
         application.broadcast.removeNamespace(
                 self._module.__name__.split('.')[-1]
         )
+        sys.modules.pop(self._module.__name__)
+        self._module.__dict__.clear()
         self._module = import_module(self._module_path)
         if self._status:
             self._status = False
@@ -314,7 +314,7 @@ class Cube:
 
         def coroutine_generator():
             while True:
-                yield Sleep(0)
+                yield Sleep(0.1)
                 yield broadcast.Executor(
                         target=ExecTarget(
                                 callable_=scan,
