@@ -215,7 +215,6 @@ class Cube:
             self.turn_off()
         else:
             self.turn_on()
-        self._status = not self._status
         return self._status
 
     @property
@@ -314,7 +313,7 @@ class Cube:
 
         def coroutine_generator():
             while True:
-                yield Sleep(0.1)
+                yield Sleep(0)
                 yield broadcast.Executor(
                         target=ExecTarget(
                                 callable_=scan,
@@ -325,6 +324,7 @@ class Cube:
                         event=CubeLoadTaskExecute()
                 )
 
+        await Sleep(0.1)
         for coroutine in coroutine_generator():
             await coroutine
 
