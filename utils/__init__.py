@@ -9,6 +9,9 @@ from typing import (
 
 from ruamel.yaml import YAML as _YAML
 from ruamel.yaml.compat import StringIO
+from ujson import loads
+
+from utils.typing import PathType
 
 
 def get_project_path() -> Path:
@@ -16,8 +19,8 @@ def get_project_path() -> Path:
     if not project_path:
         project_path = Path(__file__).parent.parent
         environ.setdefault(
-            'PROJECT_PATH',
-            str(project_path.resolve())
+                'PROJECT_PATH',
+                str(project_path.resolve())
         )
     return Path(project_path) if isinstance(project_path, str) else project_path
 
@@ -35,15 +38,32 @@ class YAML(_YAML):
             return stream.getvalue()
 
 
-_config_ = YAML(typ='safe').load(
-    get_project_path()
-        .joinpath("config.yml")
-        .open(encoding='utf-8')
-)
+def load_config(config_file: PathType = 'config.yml',
+                home_path: PathType = get_project_path()) -> dict:
+    home = Path(home_path) if isinstance(home_path, str) else home_path
+    if home.exists() and home.is_dir():
+
+        path = home_path.joinpath(config_file) if isinstance(config_file, str) \
+            else config_file
+        if path.exists() and path.is_file() and path.suffix == '.yml':
+            return YAML(typ='safe').load(path.open(encoding='utf-8'))
+        else:
+            raise FileExistsError(str(path))
+    else:
+        raise FileExistsError(str(home_path))
 
 
-def get_config(config_var_name: str = None) -> dict:
+_config_ = load_config('config.yml')
+
+
+def get_bot_config(config_var_name: str = None) -> dict:
     return _config_[config_var_name] if config_var_name else _config_
+
+
+def refresh_bot_config() -> dict:
+    global _config_
+    _config_ = load_config('config.yml')
+    return _config_
 
 
 def get_var_name(var: Any) -> Union[str, None]:
@@ -82,6 +102,39 @@ def format_time(time_: float, c: str = '') -> str:
     ]
 
     return c.join([i for i in result if i != ""])
+
+
+class JsonDict(dict):
+    def __getattr__(self, item):
+        return self.get(item)
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+
+def JsonLoader(string: str, is_json_dict: bool = False, **kwargs):
+    def to_json_dict(obj_):
+        result = obj_
+        if isinstance(result, dict):
+            for key in result:
+                result.update({
+                    key: to_json_dict(result[key])
+                })
+            return JsonDict(result)
+        elif isinstance(result, list):
+            for item in result:
+                index = result.index(item)
+                result[index] = to_json_dict(item)
+            return result
+        elif isinstance(result, str):
+            try:
+                result = loads(result, **kwargs)
+                return to_json_dict(result)
+            except ValueError:
+                return result
+        return result
+
+    return to_json_dict(string) if is_json_dict else loads(string, **kwargs)
 
 
 def serial_number(num: int, serial_type: int = 0) -> str:
