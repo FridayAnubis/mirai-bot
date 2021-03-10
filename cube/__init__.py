@@ -285,7 +285,7 @@ class Cube:
                     try:
                         cube = cls.load_form_path(cube_path)
                         application.logger.success(
-                                f"The cube named '{cube._name}' has been loaded."
+                                f"The cube ('{cube._name}') has been loaded."
                         )
                     except Exception as e:
                         application.logger.debug(f'cube load error:{e}')
