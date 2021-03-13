@@ -9,7 +9,7 @@ from core.broadcast import Broadcast
 from core.broadcast.interrupt import InterruptControl
 from core.scheduler import KarakoScheduler
 from utils import (
-    get_config,
+    get_bot_config,
     get_project_path,
 )
 from utils.context import set_var
@@ -30,7 +30,7 @@ class Bot:
 
     def __init__(self, *, logger: AbstractLogger = None):
 
-        self.config = get_config()
+        self.config = get_bot_config()
         set_var('debug', self.config['debug'])
 
         self.loop = get_event_loop()

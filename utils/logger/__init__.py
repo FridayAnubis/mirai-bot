@@ -8,7 +8,7 @@ from pathlib import Path
 
 from loguru import logger as _Logger
 
-from .. import get_config
+from .. import get_bot_config
 
 
 class AbstractLogger(ABC):
@@ -49,7 +49,7 @@ class Logger(AbstractLogger):
     __logger: _Logger
 
     def __init__(self) -> None:
-        debug: bool = get_config('debug')
+        debug: bool = get_bot_config('debug')
         self.__logger = _Logger
         # {thread.name} {file}:{module}.{function} {line}|
         time_fmt = "{time:HH:mm:ss}"  # {time:YYYY-MM-DD HH:mm:ss.SSS}
@@ -84,7 +84,7 @@ class Logger(AbstractLogger):
     def log_to_file(self, path: Union[str, Path] = None):
         from os import environ
         project_path = Path(environ.get('PROJECT_PATH'))
-        config = get_config('log')
+        config = get_bot_config('log')
 
         log_path = project_path.joinpath(
             config['sink'] if path is None else path

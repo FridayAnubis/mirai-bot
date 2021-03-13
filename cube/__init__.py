@@ -11,6 +11,8 @@ from core import (
     KarakoMiraiApplication,
     KarakoScheduler,
 )
+from core.application import ApplicationLaunched
+
 from core.broadcast import (
     BaseEvent,
     Namespace,
@@ -67,26 +69,26 @@ def feature(
     def feature_wrapper(callable_target: FunctionType):
         result = broadcast.getListener(callable_target)
         namespace_ = broadcast.createNamespace(
-                callable_target.__module__.split('.')[-1], hide=True
+            callable_target.__module__.split('.')[-1], hide=True
         ) if namespace is None else namespace
         if result is None:
             broadcast.addListener(
-                    Listener(
-                            callable_=callable_target,
-                            namespace=namespace_,
-                            inline_dispatchers=dispatchers,
-                            priority=priority,
-                            listening_events=[event],
-                            headless_decorators=decorators,
-                            enable_internal_access=enable_internal_access
-                    )
+                Listener(
+                    callable_=callable_target,
+                    namespace=namespace_,
+                    inline_dispatchers=dispatchers,
+                    priority=priority,
+                    listening_events=[event],
+                    headless_decorators=decorators,
+                    enable_internal_access=enable_internal_access
+                )
             )
         else:
             if event not in result:
                 result.listening_events.append(event)
             else:
                 raise RegisteredEventListener(
-                        event.__name__, "has been registered!"
+                    event.__name__, "has been registered!"
                 )
 
         return callable_target
@@ -104,9 +106,9 @@ def schedule(
 ):
     def schedule_wrapper(func):
         task = SchedulerTask(
-                func, timer, broadcast, broadcast.loop, cancelable,
-                decorators, dispatchers, enableInternalAccess,
-                scheduler.createNamespace(func.__module__.split('.')[-1])
+            func, timer, broadcast, broadcast.loop, cancelable,
+            decorators, dispatchers, enableInternalAccess,
+            scheduler.createNamespace(func.__module__.split('.')[-1])
         )
         scheduler.addSchedule(task)
         return func
@@ -137,8 +139,8 @@ class Cube:
                 self._module = import_module(self._module_path)
             except Exception as e:
                 application.logger.exception(
-                        f"An error occurred while loading the cube "
-                        f"'{self._module_path}': {e}"
+                    f"An error occurred while loading the cube "
+                    f"'{self._module_path}': {e}"
                 )
                 raise e
 
@@ -146,20 +148,20 @@ class Cube:
             self._disable = self._module.__getattribute__('_disable')
         except AttributeError:
             raise AttributeError(
-                    f'Cube "{self._module_path}" has no "_disable" attribute.'
+                f'Cube "{self._module_path}" has no "_disable" attribute.'
             )
 
         try:
             self._name = self._module.__getattribute__('_name')
         except AttributeError:
             raise AttributeError(
-                    f'Cube "{self._module_path}" has no "_name" attribute.'
+                f'Cube "{self._module_path}" has no "_name" attribute.'
             )
         try:
             self._author = self._module.__getattribute__('_author')
         except AttributeError:
             raise AttributeError(
-                    f'Cube "{self._module_path}" has no "_author" attribute.'
+                f'Cube "{self._module_path}" has no "_author" attribute.'
             )
         try:
             self._description = self._module.__getattribute__('_description')
@@ -172,7 +174,7 @@ class Cube:
 
     def reinstall(self):
         application.broadcast.removeNamespace(
-                self._module.__name__.split('.')[-1]
+            self._module.__name__.split('.')[-1]
         )
         sys.modules.pop(self._module.__name__)
         self._module.__dict__.clear()
@@ -184,7 +186,7 @@ class Cube:
     def uninstall(self):
         try:
             application.broadcast.removeNamespace(
-                    self._module.__name__.split('.')[-1]
+                self._module.__name__.split('.')[-1]
             )
         except UnExistedNamespace:
             pass
@@ -197,7 +199,7 @@ class Cube:
     def turn_on(self):
         if not self._status:
             application.broadcast.unHideNamespace(
-                    self._module.__name__.split('.')[-1]
+                self._module.__name__.split('.')[-1]
             )
             scheduler.enableNamespace(self._module.__name__.split('.')[-1])
             self._status = True
@@ -205,7 +207,7 @@ class Cube:
     def turn_off(self):
         if self._status:
             application.broadcast.hideNamespace(
-                    self._module.__name__.split('.')[-1]
+                self._module.__name__.split('.')[-1]
             )
             scheduler.disableNamespace(self._module.__name__.split('.')[-1])
             self._status = False
@@ -259,8 +261,8 @@ class Cube:
             module = import_module(cube_path)
         except Exception as e:
             application.logger.exception(
-                    f"An error occurred while loading the "
-                    f"cube({cube_path}): {e}"
+                f"An error occurred while loading the "
+                f"cube({cube_path}): {e}"
             )
             raise e
         return cls(module)
@@ -280,12 +282,12 @@ class Cube:
             for cube_path in cls.cube_paths():
                 if cube_path not in cube_module_path_list():
                     application.logger.info(
-                            f'Detect a cube from "{cube_path}"'
+                        f'Detect a cube from "{cube_path}"'
                     )
                     try:
                         cube = cls.load_form_path(cube_path)
                         application.logger.success(
-                                f"The cube ('{cube._name}') has been loaded."
+                            f"The cube ('{cube._name}') has been loaded."
                         )
                     except Exception as e:
                         application.logger.debug(f'cube load error:{e}')
@@ -297,15 +299,15 @@ class Cube:
             for cube_path in cube_module_path_list():
                 if cube_path not in cls.cube_paths():
                     application.logger.warn(
-                            f"The cube from '{cube_path}' has been deleted."
+                        f"The cube from '{cube_path}' has been deleted."
                     )
                     try:
                         cube = cls.get_by_module_path(cube_path)
                         cube.turn_off()
                         cube.uninstall()
                         application.logger.success(
-                                f"The cube named '{cube._name}' has been "
-                                f"uninstalled."
+                            f"The cube named '{cube._name}' has been "
+                            f"uninstalled."
                         )
                     except Exception as e:
                         application.logger.exception(e)
@@ -315,18 +317,27 @@ class Cube:
             while True:
                 yield Sleep(0)
                 yield broadcast.Executor(
-                        target=ExecTarget(
-                                callable_=scan,
-                                inline_dispatchers=[],
-                                headless_decorators=[],
-                                enable_internal_access=False
-                        ),
-                        event=CubeLoadTaskExecute()
+                    target=ExecTarget(
+                        callable_=scan,
+                        inline_dispatchers=[],
+                        headless_decorators=[],
+                        enable_internal_access=False
+                    ),
+                    event=CubeLoadTaskExecute()
                 )
 
-        await Sleep(0.1)
-        for coroutine in coroutine_generator():
-            await coroutine
+        async def run():
+            for coroutine in coroutine_generator():
+                await coroutine
+
+        # await Sleep(0.1)
+        broadcast.addListener(
+            Listener(
+                callable_=run,
+                listening_events=ApplicationLaunched,
+                namespace=broadcast.getDefaultNamespace
+            )
+        )
 
     @classmethod
     def initialize(cls):

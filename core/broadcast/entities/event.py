@@ -16,14 +16,14 @@ class EventMeta(ModelMetaclass):
                 mapping["__base_event__"] = False
         if not mapping.get("Dispatcher") and name != "BaseEvent":
             raise AttributeError(
-                    "a event class must have a dispatcher called 'Dispatcher'"
+                "a event class must have a dispatcher called 'Dispatcher'"
             )
         r = super().__new__(
-                mcs,
-                name,
-                (BaseModel, *bases) if name == "BaseEvent" else bases,
-                mapping,
-                **kwargs
+            mcs,
+            name,
+            (BaseModel, *bases) if name == "BaseEvent" else bases,
+            mapping,
+            **kwargs
         )
         if mapping.get("type"):
             r.type = mapping.get("type")
@@ -36,5 +36,3 @@ class EventMeta(ModelMetaclass):
 class BaseEvent(metaclass=EventMeta):
     class Config:
         arbitrary_types_allowed = True
-
-

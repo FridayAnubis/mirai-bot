@@ -6,8 +6,6 @@ from typing import (
     Any,
     Callable,
     List,
-    NoReturn,
-    Optional,
     Tuple,
     Union,
 )
@@ -53,6 +51,7 @@ from .event.messages import (
     GroupMessage,
     TempMessage,
 )
+from .event.mirai import *
 from .exceptions import (
     InvalidArgument,
     InvalidSession,
@@ -82,7 +81,6 @@ from .utilles import (
     requireAuthenticated,
     yes_or_no,
 )
-from .event.mirai import *
 from ..template import Template
 
 
@@ -1446,7 +1444,7 @@ class KarakoMiraiApplication:
                     )
                 )
         ) as connection:
-            self.logger.info("websocket: connected")
+            self.logger.success("Websocket: connected")
             while True:
                 ws_message = await connection.receive()
                 if ws_message.type is WSMsgType.TEXT:
@@ -1484,12 +1482,12 @@ class KarakoMiraiApplication:
     async def websocket_daemon(self):
         while True:
             self.logger.info(
-                "websocket daemon: websocket connection starting...")
+                "Websocket daemon: websocket connection starting...")
             try:
                 await self.ws_all_poster()
             except aiohttp.client_exceptions.ClientConnectorError:
                 self.logger.info(
-                    "websocket daemon: it seems that remote down, "
+                    "Websocket daemon: it seems that remote down, "
                     "waiting for 10 seconds..."
                 )
                 await asyncio.sleep(10)
@@ -1510,13 +1508,13 @@ class KarakoMiraiApplication:
     async def switch_event_detect_method(self):
         config = await self.getConfig()
         if not self.connect_info.websocket:  # 不启用 websocket
-            self.logger.info("using http to receive event")
+            self.logger.info("Using 'http' to receive event.")
             if config.enableWebsocket:  # 配置中已经启用
                 await self.modifyConfig(enableWebsocket=False)
                 self.logger.info(
-                    "found websocket enabled, so it has been disabled.")
+                    "Found websocket enabled, so it has been disabled.")
         else:  # 启用ws
-            self.logger.info("using pure websocket to receive event")
+            self.logger.info("Using pure websocket to receive event")
             if not config.enableWebsocket:  # 配置中没启用
                 self.logger.info(
                     "found websocket disabled, so it has been enabled.")
@@ -1542,11 +1540,9 @@ class KarakoMiraiApplication:
         await self.activeSession()
 
         if self.broadcast is not None:
-            self.broadcast.postEvent(ApplicationLaunched(self))
             await self.broadcast.layered_scheduler(
                 listener_generator=self.broadcast
-                    .default_listener_generator(
-                    ApplicationLaunchedBlocking),
+                    .default_listener_generator(ApplicationLaunchedBlocking),
                 event=ApplicationLaunchedBlocking(self),
             )
 
@@ -1604,6 +1600,7 @@ class KarakoMiraiApplication:
                 int(round(time.time() - start_time, 3) * 1000)
             )
         )
+        self.broadcast.postEvent(ApplicationLaunched(self))
 
     def getFetching(self):
         return (

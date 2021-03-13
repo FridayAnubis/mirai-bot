@@ -2,6 +2,7 @@ from typing import (
     Callable,
     List,
     Type,
+    Union,
 )
 
 from .dispatcher import BaseDispatcher
@@ -17,18 +18,19 @@ class Listener(ExecTarget):
             self,
             callable_: Callable,
             namespace: Namespace,
-            listening_events: List[Type[BaseEvent]],
+            listening_events: Union[List[Type[BaseEvent]], Type[BaseEvent]],
             inline_dispatchers: List[BaseDispatcher] = None,
             headless_decorators: List[Decorator] = None,
             priority: int = 16,
             enable_internal_access: bool = False,
     ) -> None:
         super().__init__(
-                callable_, inline_dispatchers, headless_decorators,
-                enable_internal_access
+            callable_, inline_dispatchers, headless_decorators,
+            enable_internal_access
         )
         self.namespace = namespace
-        self.listening_events = listening_events
+        self.listening_events = [listening_events] if not isinstance(
+            listening_events, list) else listening_events
         self.priority = priority
 
     namespace: Namespace
